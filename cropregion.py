@@ -3,6 +3,16 @@ import cv2
 clicked_points = []
 clone = None
 
+def first_frame(video_path):
+    '''
+    Extract the first frame of the video for use in selecting corners
+    '''
+    cap = cv2.VideoCapture(video_path)
+    ret, frame = cap.read()
+    cap.release()
+
+    return frame
+
 def click_event(event, x, y, flags, param):
     global clicked_points, clone
 
@@ -16,11 +26,11 @@ def click_event(event, x, y, flags, param):
 
         print(f"Point {len(clicked_points)}: {x, y}")
 
-def select_four_corners(image_path):
+def select_four_corners(video_path):
     global clicked_points, clone
     clicked_points = []
 
-    img = cv2.imread("Image 2.png")
+    img = first_frame(video_path)
     if img is None:
         raise ValueError("Could not load image for corner selection")
 

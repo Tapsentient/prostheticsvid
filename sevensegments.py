@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 
 reader = easyocr.Reader(['en'])
 
-#Warp the selected region into a rectangular frame
 def four_point_crop(frame, pts):
+    '''
+    Warp the selected region into a rectangular frame
+    '''
     pts = np.array(pts, dtype='float32')
 
     #compute new widths, heights of image
@@ -28,10 +30,24 @@ def four_point_crop(frame, pts):
     warped = cv2.warpPerspective(frame, M, (maxwidth, maxheight))
     return warped
 
+def text_ocr(frame):
+    '''
+    Extract text on Newtonmeter via easy_ocr module 
+    '''
+    result = reader.readtext(frame)
+    text = result[0][-2] if result else ''
+    try:
+        text = float(text.strip().replace('O', '0').replace(' ', '').replace('i', '1').replace('/','1'.replace('I','1')))
+    except ValueError:
+        text = None
+    return text 
+
+def text_mask(frame):
+    text = "xyz"
+    return text
+
 
 def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
-    
-
     cap = cv2.VideoCapture(video_path) #Open video file
     
     #Check if file opened or not
@@ -52,14 +68,6 @@ def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
     print("Video Properties \nFrame Width, Frame Height, FPS: ")
     print(frame_width, frame_height, fps)
 
-    #Set crop region
-    '''
-    if crop_region == None:
-        x, y, w, h = 0, 0, -1, -1 #Use whole image if image is note cropped
-    else: 
-        x, y, w, h = crop_region #
-    '''
-    
     data = []
     while True: 
         ret, frame = cap.read()
@@ -85,15 +93,7 @@ def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
             break
 
         #Extract text 
-        
-        result = reader.readtext(thresh)
-        text = result[0][-2] if result else ''
-        #text = pytesseract.image_to_string(thresh, config="--psm 7 -c tessedit_char_whitelist=0123456789.")
-        # Extract number safely
-        try:
-            text = float(text.strip().replace('O', '0').replace(' ', '').replace('i', '1').replace('/','1'.replace('I','1')))
-        except ValueError:
-            text = None
+        text = text_ocr(thresh)
         
         print(text)
         input()
