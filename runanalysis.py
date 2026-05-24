@@ -15,8 +15,12 @@ video_path = file_name
 corners = cropregion.select_four_corners(video_path)
 print("Use these points in your crop:", corners)
 
+#%% Find seven segments
+crop_points = corners
+segments = sevensegments.define_segments(video_path, crop_points)
+
+
 #%%
-crop_points = [(189, 98), (310, 100), (306, 186), (179, 181)]
 start_frame = 30*75
 end_frame = None #41*30
 

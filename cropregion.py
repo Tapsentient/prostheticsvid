@@ -2,12 +2,19 @@ import cv2
 
 clicked_points = []
 clone = None
+segments = []
+current_points = []
 
-def first_frame(video_path):
+def halfway_frame(video_path):
     '''
-    Extract the first frame of the video for use in selecting corners
+    Extract the halfway frame of the video for use in selecting corners
     '''
     cap = cv2.VideoCapture(video_path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    mid_frame_idx = total_frames // 2
+
+    cap.set(cv2.CAP_PROP_POS_FRAMES, mid_frame_idx)
+    
     ret, frame = cap.read()
     cap.release()
 
@@ -30,7 +37,7 @@ def select_four_corners(video_path):
     global clicked_points, clone
     clicked_points = []
 
-    img = first_frame(video_path)
+    img = halfway_frame(video_path)
     if img is None:
         raise ValueError("Could not load image for corner selection")
 

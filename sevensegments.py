@@ -2,8 +2,10 @@ import numpy as np
 import cv2
 import easyocr
 import matplotlib.pyplot as plt
+import cropregion
 
 reader = easyocr.Reader(['en'])
+
 
 def four_point_crop(frame, pts):
     '''
@@ -42,12 +44,64 @@ def text_ocr(frame):
         text = None
     return text 
 
-def text_mask(frame):
+def segment_ocr(frame):
     text = "xyz"
     return text
 
+segments = []
+current_points = []
 
-def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
+def click_event(event, x, y, flags, param):
+    global current_points, segments, clone
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        current_points.append((x, y))
+
+        if len(current_points) == 2:
+            p1, p2 = current_points
+            segments.append((p1, p2))
+            cv2.line(clone, p1, p2, (0, 255, 0), 2)
+            cv2.imshow("Define Segments", clone)
+            current_points = []
+
+def define_segments(video_path, crop_points):
+    global clone, segments, current_points
+    segments = []
+    current_points = []
+
+    image = cropregion.halfway_frame(video_path)
+    cropped_image = four_point_crop(image, crop_points)
+    clone = cropped_image.copy()
+
+    cv2.imshow("Define Segments", clone)
+    cv2.setMouseCallback("Define Segments", click_event)
+    print("Click 2 points per segment. Press ESC when done.")
+
+    while True:
+        key = cv2.waitKey(1) & 0xFF
+        if key == 27:
+            break
+    
+    cv2.destroyAllWindows()
+    cv2.waitKey(1)
+    cv2.waitKey(1)
+    cv2.waitKey(1)
+
+    return segments
+
+def is_segment_on(frame, p1, p2, threshold=0.5):
+    x1, y1 = p1
+    x2, y2 = p2
+    num = 30 # Sample 30 points along the line
+    xs = np.linspace(*p1, num).astype(int)
+    ys= np.linspace(y1, y2, num).astype(int)
+    
+    values = frame[ys, xs]
+    mean_val = np.mean(values) #White = ON, black = OFF
+
+    return mean_val >threshold * 255
+
+def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None, segments=None):
     cap = cv2.VideoCapture(video_path) #Open video file
     
     #Check if file opened or not
@@ -78,10 +132,11 @@ def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
         if crop_points is not None:
             cropped_frame = four_point_crop(frame, crop_points)
         
+        threshold = 1500
         cv2.imshow('Original Frame', cropped_frame)
         gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY) #Convert to grayscale
         gray = cv2.GaussianBlur(gray, (3, 3), 0) #Blur out imperfections
-        _, thresh = cv2.threshold(gray, 0, 1500, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, thresh = cv2.threshold(gray, 0, threshold, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
         thresh = cv2.bitwise_not(thresh)
         thresh = cv2.dilate(thresh, np.ones((7,3), np.uint8), iterations=1) #make edges wider, filling in gaps b/w segments
