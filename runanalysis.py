@@ -8,7 +8,7 @@ import length
 import matplotlib.pyplot as plt
 
 #%% Define file name
-file_name = "Newtonmeter.mp4"
+file_name = "Newtonmeter2.mp4"
 video_path = file_name
 
 #%% Find crop region
@@ -21,11 +21,11 @@ segments = sevensegments.define_segments(video_path, crop_points)
 
 
 #%%
-start_frame = 30*75
+start_frame = None
 end_frame = None #41*30
 
 #Edit the video (crop/grayscale) to make it easier to analyse and extract data
-data = sevensegments.Video_analysis(video_path, crop_points, start_frame, end_frame)
+data = sevensegments.Video_analysis(video_path, crop_points, start_frame, end_frame, segments)
 print(data)
 
 times = [t for (t, v) in data if v is not None]
