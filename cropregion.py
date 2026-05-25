@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 clicked_points = []
 clone = None
@@ -69,3 +70,28 @@ def select_four_corners(video_path):
 
     print("Selected points:", clicked_points)
     return clicked_points
+
+def four_point_crop(frame, pts):
+    '''
+    Warp the selected region into a rectangular frame
+    '''
+    pts = np.array(pts, dtype='float32')
+
+    #compute new widths, heights of image
+    widthA = np.linalg.norm(pts[2]-pts[3])
+    widthB = np.linalg.norm(pts[1]-pts[0])
+    heightA = np.linalg.norm(pts[1]-pts[2])
+    heightB = np.linalg.norm(pts[0]-pts[3])
+    maxheight = int(max(heightA, heightB))
+    maxwidth = int(max(widthA, widthB))
+    dst = np.array([
+        [0, 0],
+        [maxwidth - 1, 0],
+        [maxwidth - 1, maxheight - 1],
+        [0, maxheight - 1]
+    ], dtype="float32")
+
+    #warp cropped region to fit new rectangle with heights defined above
+    M = cv2.getPerspectiveTransform(pts, dst)
+    warped = cv2.warpPerspective(frame, M, (maxwidth, maxheight))
+    return warped

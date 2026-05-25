@@ -1,37 +1,13 @@
 import numpy as np
 import cv2
-#import easyocr
 import matplotlib.pyplot as plt
 import cropregion
 
+#import easyocr
 #reader = easyocr.Reader(['en'])
 
 
-def four_point_crop(frame, pts):
-    '''
-    Warp the selected region into a rectangular frame
-    '''
-    pts = np.array(pts, dtype='float32')
-
-    #compute new widths, heights of image
-    widthA = np.linalg.norm(pts[2]-pts[3])
-    widthB = np.linalg.norm(pts[1]-pts[0])
-    heightA = np.linalg.norm(pts[1]-pts[2])
-    heightB = np.linalg.norm(pts[0]-pts[3])
-    maxheight = int(max(heightA, heightB))
-    maxwidth = int(max(widthA, widthB))
-    dst = np.array([
-        [0, 0],
-        [maxwidth - 1, 0],
-        [maxwidth - 1, maxheight - 1],
-        [0, maxheight - 1]
-    ], dtype="float32")
-
-    #warp cropped region to fit new rectangle with heights defined above
-    M = cv2.getPerspectiveTransform(pts, dst)
-    warped = cv2.warpPerspective(frame, M, (maxwidth, maxheight))
-    return warped
-
+"""
 def text_ocr(frame):
     '''
     Extract text on Newtonmeter via easy_ocr module 
@@ -43,6 +19,7 @@ def text_ocr(frame):
     except ValueError:
         text = None
     return text 
+"""
 
 segment_map = {
     (1,1,1,1,1,1,0): "0",
@@ -121,7 +98,7 @@ def define_segments(video_path, crop_points):
     current_segment = []
 
     image = cropregion.halfway_frame(video_path)
-    cropped_image = four_point_crop(image, crop_points)
+    cropped_image = cropregion.four_point_crop(image, crop_points)
     clone = cropped_image.copy()
 
     cv2.imshow("Define Segments", clone)
@@ -160,7 +137,11 @@ def is_segment_on(frame, p1, p2, threshold=0.5):
     mean_val = np.mean(values) #White = ON, black = OFF
     return mean_val > threshold * 255
 
-def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None, segments=None):
+def newtonmeter_analysis(video_path, crop_points=None, start_frame=0, end_frame=None, segments=None):
+    '''
+    Returns the newtonmeter reading times 10 for each frame in an array. For intermediate values, 
+    returns nan
+    '''
     cap = cv2.VideoCapture(video_path) #Open video file
     
     #Check if file opened or not
@@ -189,7 +170,7 @@ def Video_analysis(video_path, crop_points=None, start_frame=0, end_frame=None, 
             break #Break if at last frame or if exceeded end frame
 
         if crop_points is not None:
-            cropped_frame = four_point_crop(frame, crop_points)
+            cropped_frame = cropregion.four_point_crop(frame, crop_points)
         
         threshold = 1500
         cv2.imshow('Original Frame', cropped_frame)
