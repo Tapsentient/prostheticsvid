@@ -34,12 +34,19 @@ plt.show()
 muscle_corners = cropregion.select_rectangle(muscle_video_path)
 print("Use these points in your crop:", muscle_corners)
 
+#%% Select muscle end
+end_coord = length.select_muscle_end(muscle_video_path)
+print("End coord:", end_coord)
+
 #%% Analyse length
-lengths = length.length_analysis(muscle_video_path, muscle_corners, threshold = 220)
+lengths = length.length_analysis(video_path=muscle_video_path, 
+                                 crop_points=muscle_corners, 
+                                 end_coord=end_coord, 
+                                 threshold = 220)
 
 #%%
-times = [t for (t, v) in lengths if v is not None]
-values = [v/10 for (t, v) in lengths if v is not None]
+times = [t for (t, l1, l2, l3) in lengths if l1 is not None]
+values = [l1 for (t, l1, l2, l3) in lengths if l1 is not None]
 plt.scatter(times, values)
 plt.ylabel('Length (pixels)')
 plt.xlabel('Time (s)')

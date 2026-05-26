@@ -46,10 +46,11 @@ def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
 
     return c1, c2
 
-def length_analysis(video_path, crop_points=None, threshold=125, dist_thresh = 20, start_frame=0, end_frame=None):
+def length_analysis(video_path, crop_points=None, end_coord=(0, 0), threshold=125, dist_thresh = 20, start_frame=0, end_frame=None):
     '''
     Returns the length of the muscle in each frame. In order to do so, image converted to BnW to isolate foil
     crop_points must be of the format x, y, w, h. cropregion.select_rectangle can help select these.
+    Return format: [(time, end_to_end_length, distance between foils, distance between mid foil and end)]
     thresh: Opacity below which pixel set to black. Tweak for noise
     dist_thresh: All points this distance away from the centroid in the previous frame set to black. Tweak for noise     
     '''
@@ -96,9 +97,15 @@ def length_analysis(video_path, crop_points=None, threshold=125, dist_thresh = 2
             break
 
         c1, c2 = two_blob_kmeans(thresh, previous_centroids, dist_thresh)
-        length = np.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2)
-
-        print(c1)
+        mid_length_1 = np.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2)
+        end_length_1 = np.sqrt((c1[0]-end_coord[0])**2 + (c1[1]-end_coord[1])**2)
+        end_length_2 = np.sqrt((c2[0]-end_coord[0])**2 + (c2[1]-end_coord[1])**2)
+        if end_length_1<end_length_2:
+            end_to_end_length = end_length_2
+            mid_length_2 = end_length_1
+        else: 
+            end_to_end_length = end_length_2
+            mid_length_2 = end_length_1     
         
         thresh_vis = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
         cv2.circle(thresh_vis, (int(c1[0]), int(c1[1])), 1, (0, 0, 255))
@@ -107,7 +114,7 @@ def length_analysis(video_path, crop_points=None, threshold=125, dist_thresh = 2
         input()
         time_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
-        data.append((time_sec, length))
+        data.append((time_sec, end_to_end_length, mid_length_1, mid_length_2))
         previous_centroids = c1, c2
         cv2.circle(thresh_vis,
                 (int(c1[0]), int(c1[1])),
@@ -129,3 +136,45 @@ def length_analysis(video_path, crop_points=None, threshold=125, dist_thresh = 2
     cv2.waitKey(1)
     cv2.waitKey(1)
     return data
+
+clicked_point = None
+clone = None
+def click_event(event, x, y, flags, param):
+    global clicked_point, clone
+
+    # Left mouse button click
+    if event == cv2.EVENT_LBUTTONDOWN:
+        # add point
+        clicked_point = (x, y)
+        # draw the point on image
+        cv2.circle(clone, (x, y), 5, (0, 0, 255), -1)
+        cv2.imshow("Select end point", clone)
+
+
+def select_muscle_end(video_path):
+    global clicked_point, clone
+    clicked_point = None
+
+    img = cropregion.nth_frame(video_path, 0.5)
+    if img is None:
+        raise ValueError("Could not load image for corner selection")
+
+    clone = img.copy()
+    cv2.imshow("Select muscle end", clone)
+    cv2.setMouseCallback("Select muscle end", click_event)
+
+    # Wait until 4 points selected or user quits
+    while True:
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q') or clicked_point is not None:
+            break
+
+    cv2.destroyAllWindows()
+    cv2.waitKey(1)
+    cv2.waitKey(1)
+    cv2.waitKey(1)
+
+
+    print("Selected point:", clicked_point)
+    return clicked_point
+
