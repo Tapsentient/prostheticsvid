@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 import cv2
 
-def two_blob_kmeans(bw_images_array, previous_centroid=None, dist_thresh=30):
+def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
     '''
     Returns the positions of centroids of the aluminium foil in each frame. 
     Format: c1, c2 where ci = [(xi, yi)]
@@ -11,43 +11,40 @@ def two_blob_kmeans(bw_images_array, previous_centroid=None, dist_thresh=30):
     c1 = []
     c2 = []
 
-    for frame in bw_images_array:
-        # Get coordinates of all white pixels
-        ys_white, xs_white = np.where(frame == 255)
+    # Get coordinates of all white pixels
+    ys_white, xs_white = np.where(frame == 255)
 
-        # If not enough white pixels → blank frame
-        if len(xs_white) < 2:
-            c1.append(np.nan, np.nan)
-            c2.append(np.nan, np.nan)
-            continue
+    # If not enough white pixels → blank frame
+    if len(xs_white) < 2:
+        c1.append(np.nan, np.nan)
+        c2.append(np.nan, np.nan)
+        return None
 
-        coords = np.column_stack((xs_white, ys_white))  # shape: (N, 2)
+    coords = np.column_stack((xs_white, ys_white))  # shape: (N, 2)
 
-        if previous_centroid is not None:
-            prev_c1, prev_c2 = previous_centroid
-            d1 = np.linalg.norm(coords - prev_c1, axis=1)
-            d2 = np.linalg.norm(coords - prev_c2, axis=1)
-            mask = (d1 < dist_thresh) | (d2 < dist_thresh)
-            coords = coords[mask]
-
-            continue
+    if previous_centroid is not None:
+        prev_c1, prev_c2 = previous_centroid
+        d1 = np.linalg.norm(coords - prev_c1, axis=1)
+        d2 = np.linalg.norm(coords - prev_c2, axis=1)
+        mask = (d1 < dist_thresh) | (d2 < dist_thresh)
+        coords = coords[mask]
 
 
-        # If too few points for 2 clusters, KMeans fails → skip
-        if coords.shape[0] < 2:
-            c1.append(np.nan, np.nan)
-            c2.append(np.nan, np.nan)
-            continue
+    # If too few points for 2 clusters, KMeans fails → skip
+    if coords.shape[0] < 2:
+        c1.append(np.nan, np.nan)
+        c2.append(np.nan, np.nan)
+        return None
 
-        # Run k-means to split into two clusters
-        kmeans = KMeans(n_clusters=2, n_init=10)
-        kmeans.fit(coords)
+    # Run k-means to split into two clusters
+    kmeans = KMeans(n_clusters=2, n_init=10)
+    kmeans.fit(coords)
 
-        c = kmeans.cluster_centers_
-        
-        # c is shape (2, 2): [ [x1,y1], [x2,y2] ]
-        c1.append(c[0][0], c[0][1])
-        c2.append(c[1][0], c[1][1])
+    c = kmeans.cluster_centers_
+    
+    # c is shape (2, 2): [ [x1,y1], [x2,y2] ]
+    c1.append(c[0][0], c[0][1])
+    c2.append(c[1][0], c[1][1])
 
     return c1, c2
 
@@ -87,16 +84,14 @@ def length_analysis(video_path, crop_points=None, start_frame=0, end_frame=None)
         if crop_points is not None:
             cropped_frame = frame[y:y+h, x:x+w]
 
-        threshold = 1500
+        threshold = 750
         cv2.imshow('Original Frame', cropped_frame)
         gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY) #Convert to grayscale
         gray = cv2.GaussianBlur(gray, (3, 3), 0) #Blur out imperfections
         _, thresh = cv2.threshold(gray, 0, threshold, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
-        thresh = cv2.bitwise_not(thresh)
-        thresh = cv2.dilate(thresh, np.ones((7,3), np.uint8), iterations=1) #make edges wider, filling in gaps b/w segments
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((3,3), np.uint8))
-        
+                
+        cv2.imshow("Post image processing", thresh)
+        input()
         if cv2.waitKey(30) & 0xFF == ord('q'):
             cv2.waitKey(1)
             cv2.waitKey(1)
