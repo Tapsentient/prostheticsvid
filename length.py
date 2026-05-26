@@ -111,7 +111,6 @@ def length_analysis(video_path, crop_points=None, end_coord=(0, 0), threshold=12
         cv2.circle(thresh_vis, (int(c1[0]), int(c1[1])), 1, (0, 0, 255))
         cv2.circle(thresh_vis, (int(c2[0]), int(c2[1])), 1, (0, 0, 255))
         #Record time
-        input()
         time_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
         data.append((time_sec, end_to_end_length, mid_length_1, mid_length_2))

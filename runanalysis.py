@@ -3,7 +3,7 @@
 %autoreload 2
 #%%
 import cropregion
-#import sevensegments
+import sevensegments
 import length
 import matplotlib.pyplot as plt
 
