@@ -6,15 +6,19 @@ clone = None
 segments = []
 current_points = []
 
-def halfway_frame(video_path):
+def nth_frame(video_path, portion_through_video = 0):
     '''
-    Extract the halfway frame of the video for use in selecting corners
+    Extract a frame of the video for use in selecting crop region
+    portion_through_video: Fraction of the video that has elapsed. 0 selects
+    the first frame, 0.5 selects the halfway frame etc
     '''
+    if portion_through_video>=1 or portion_through_video<0:
+        raise ValueError("portion_through_video must be in [0, 1]")
     cap = cv2.VideoCapture(video_path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    mid_frame_idx = total_frames // 2
+    frame_idx = int(total_frames*portion_through_video)
 
-    cap.set(cv2.CAP_PROP_POS_FRAMES, mid_frame_idx)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
     
     ret, frame = cap.read()
     cap.release()
@@ -38,7 +42,7 @@ def select_four_corners(video_path):
     global clicked_points, clone
     clicked_points = []
 
-    img = halfway_frame(video_path)
+    img = nth_frame(video_path, 0.5)
     if img is None:
         raise ValueError("Could not load image for corner selection")
 
@@ -70,6 +74,17 @@ def select_four_corners(video_path):
 
     print("Selected points:", clicked_points)
     return clicked_points
+
+def select_rectangle(video_path):
+    img = nth_frame(video_path)
+    print("Drag a rectangle over the crop region. Use 'space' or " \
+    "'enter' to finish selection. ")
+    region = cv2.selectROI("Select Region", img)
+    cv2.destroyWindow("Select Region")
+    cv2.waitKey(1)
+    cv2.waitKey(1)
+    cv2.waitKey(1)
+    return region
 
 def four_point_crop(frame, pts):
     '''

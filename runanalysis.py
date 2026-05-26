@@ -31,7 +31,7 @@ plt.xlabel('Time (s)')
 plt.show()
 
 #%% Find crop region for muscle
-muscle_corners = cropregion.select_four_corners(muscle_video_path)
+muscle_corners = cropregion.select_rectangle(muscle_video_path)
 print("Use these points in your crop:", muscle_corners)
 
 #%% Analyse length

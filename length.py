@@ -54,6 +54,7 @@ def two_blob_kmeans(bw_images_array, previous_centroid=None, dist_thresh=30):
 def length_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
     '''
     Returns the length of the muscle in each frame
+    crop_points must be of the format x, y, w, h. cropregion.select_rectangle can help select these.
     '''
     cap = cv2.VideoCapture(video_path) #Open video file
     
@@ -74,7 +75,7 @@ def length_analysis(video_path, crop_points=None, start_frame=0, end_frame=None)
     fps = cap.get(cv2.CAP_PROP_FPS)
     print("Video Properties \nFrame Width, Frame Height, FPS: ")
     print(frame_width, frame_height, fps)
-
+    x, y, w, h = crop_points
     data = []
     previous_centroids = None
     while True: 
@@ -83,11 +84,9 @@ def length_analysis(video_path, crop_points=None, start_frame=0, end_frame=None)
         if not ret or cap.get(cv2.CAP_PROP_POS_FRAMES) >= end_frame:
             break #Break if at last frame or if exceeded end frame
 
-        '''
         if crop_points is not None:
-            cropped_frame = cropregion.four_point_crop(frame, crop_points)
-        '''
-        cropped_frame = frame
+            cropped_frame = frame[y:y+h, x:x+w]
+
         threshold = 1500
         cv2.imshow('Original Frame', cropped_frame)
         gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY) #Convert to grayscale
