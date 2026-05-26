@@ -1,12 +1,9 @@
-'''
-Test
-'''
 #%%
 %load_ext autoreload
 %autoreload 2
 #%%
 import cropregion
-import sevensegments
+#import sevensegments
 import length
 import matplotlib.pyplot as plt
 
@@ -38,8 +35,9 @@ muscle_corners = cropregion.select_rectangle(muscle_video_path)
 print("Use these points in your crop:", muscle_corners)
 
 #%% Analyse length
-lengths = length.length_analysis(muscle_video_path, muscle_corners)
+lengths = length.length_analysis(muscle_video_path, muscle_corners, threshold = 220)
 
+#%%
 times = [t for (t, v) in lengths if v is not None]
 values = [v/10 for (t, v) in lengths if v is not None]
 plt.scatter(times, values)

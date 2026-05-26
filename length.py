@@ -6,19 +6,17 @@ import cv2
 def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
     '''
     Returns the positions of centroids of the aluminium foil in each frame. 
-    Format: c1, c2 where ci = [(xi, yi)]
+    Format: c1, c2 where ci = (xi, yi)
     '''
-    c1 = []
-    c2 = []
 
     # Get coordinates of all white pixels
     ys_white, xs_white = np.where(frame == 255)
 
     # If not enough white pixels → blank frame
     if len(xs_white) < 2:
-        c1.append(np.nan, np.nan)
-        c2.append(np.nan, np.nan)
-        return None
+        c1 = (np.nan, np.nan)
+        c2 = (np.nan, np.nan)
+        return None, None
 
     coords = np.column_stack((xs_white, ys_white))  # shape: (N, 2)
 
@@ -32,9 +30,9 @@ def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
 
     # If too few points for 2 clusters, KMeans fails → skip
     if coords.shape[0] < 2:
-        c1.append(np.nan, np.nan)
-        c2.append(np.nan, np.nan)
-        return None
+        c1 = (np.nan, np.nan)
+        c2 = (np.nan, np.nan)
+        return None, None
 
     # Run k-means to split into two clusters
     kmeans = KMeans(n_clusters=2, n_init=10)
@@ -43,15 +41,17 @@ def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
     c = kmeans.cluster_centers_
     
     # c is shape (2, 2): [ [x1,y1], [x2,y2] ]
-    c1.append(c[0][0], c[0][1])
-    c2.append(c[1][0], c[1][1])
+    c1 = (c[0][0], c[0][1])
+    c2 = (c[1][0], c[1][1])
 
     return c1, c2
 
-def length_analysis(video_path, crop_points=None, start_frame=0, end_frame=None):
+def length_analysis(video_path, crop_points=None, threshold=125, dist_thresh = 20, start_frame=0, end_frame=None):
     '''
-    Returns the length of the muscle in each frame
+    Returns the length of the muscle in each frame. In order to do so, image converted to BnW to isolate foil
     crop_points must be of the format x, y, w, h. cropregion.select_rectangle can help select these.
+    thresh: Opacity below which pixel set to black. Tweak for noise
+    dist_thresh: All points this distance away from the centroid in the previous frame set to black. Tweak for noise     
     '''
     cap = cv2.VideoCapture(video_path) #Open video file
     
@@ -84,41 +84,43 @@ def length_analysis(video_path, crop_points=None, start_frame=0, end_frame=None)
         if crop_points is not None:
             cropped_frame = frame[y:y+h, x:x+w]
 
-        threshold = 750
         cv2.imshow('Original Frame', cropped_frame)
         gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY) #Convert to grayscale
         gray = cv2.GaussianBlur(gray, (3, 3), 0) #Blur out imperfections
-        _, thresh = cv2.threshold(gray, 0, threshold, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
                 
         cv2.imshow("Post image processing", thresh)
-        input()
         if cv2.waitKey(30) & 0xFF == ord('q'):
             cv2.waitKey(1)
             cv2.waitKey(1)
             break
 
-        dist_thresh = 30
         c1, c2 = two_blob_kmeans(thresh, previous_centroids, dist_thresh)
-        length = np.sqrt((c1[0]-c2[0])**2 + (c1[2]-c2[1])**2)
+        length = np.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2)
 
-        cv2.circle(thresh, c1, 1, 'red')
-        cv2.circle(thresh, c2, 1, 'red')
-        cv2.imshow('Cropped and Black and White Frame', thresh)
+        print(c1)
+        
+        thresh_vis = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
+        cv2.circle(thresh_vis, (int(c1[0]), int(c1[1])), 1, (0, 0, 255))
+        cv2.circle(thresh_vis, (int(c2[0]), int(c2[1])), 1, (0, 0, 255))
         #Record time
         input()
         time_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
         data.append((time_sec, length))
         previous_centroids = c1, c2
-        cv2.circle(thresh,
+        cv2.circle(thresh_vis,
                 (int(c1[0]), int(c1[1])),
                 dist_thresh,
-                (0, 255, 0), 1)
+                (0, 255, 0), 2)
 
-        cv2.circle(thresh,
+        cv2.circle(thresh_vis,
                 (int(c2[0]), int(c2[1])),
                 dist_thresh,
-                (0, 0, 255), 1)
+                (0, 0, 255), 2)
+        
+        cv2.imshow('With centroid, radius', thresh_vis)
+
 
 
     cap.release()
