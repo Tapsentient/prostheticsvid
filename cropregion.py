@@ -6,6 +6,10 @@ clone2 = None
 segments = []
 current_points = []
 
+def resize_window(frame):
+
+    return resized_frame
+
 def nth_frame(video_path, portion_through_video = 0):
     '''
     Extract a frame of the video for use in selecting crop region
@@ -29,6 +33,8 @@ def select_rectangle(video_path):
     img = nth_frame(video_path)
     print("Drag a rectangle over the crop region. Use 'space' or " \
     "'enter' to finish selection. ")
+    cv2.namedWindow("Select Region", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Select Region", 300, 700)
     region = cv2.selectROI("Select Region", img)
     cv2.destroyWindow("Select Region")
     cv2.waitKey(1)

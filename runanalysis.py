@@ -45,12 +45,18 @@ lengths = length.length_analysis(video_path=muscle_video_path,
                                  threshold = 220)
 
 #%%
-times = [t for (t, l1, l2, l3) in lengths if l1 is not None]
-values = [l1 for (t, l1, l2, l3) in lengths if l1 is not None]
+times = [t for (t, l1, l2, l3) in lengths if l2 is not None]
+values = [l2 for (t, l1, l2, l3) in lengths if l2 is not None]
 plt.scatter(times, values)
 plt.ylabel('Length (pixels)')
 plt.xlabel('Time (s)')
 plt.show()
 
 
-# %%
+# %% Plot hysterysis loop!
+dist = [l2 for t, l1, l2, l3 in lengths if l2 is not None]
+force = [f for (t, f) in data if t is not None]
+plt.scatter(dist, force)
+plt.ylabel("Length (pixels)")
+plt.xlabel('Time (s)')
+

@@ -101,6 +101,8 @@ def define_segments(video_path, crop_points):
     cropped_image = cropregion.four_point_crop(image, crop_points)
     clone = cropped_image.copy()
 
+    cv2.namedWindow("Define Segments", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Define Segments", 400, 200)
     cv2.imshow("Define Segments", clone)
     cv2.setMouseCallback("Define Segments", click_event)
     print("Click 2 points per segment. Select each digit in order," \

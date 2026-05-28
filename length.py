@@ -3,6 +3,11 @@ import numpy as np
 from sklearn.cluster import KMeans
 import cv2
 
+def show_resized_window(window_name, image, width=200, height=700):
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window_name, width, height)
+    cv2.imshow(window_name, image)
+
 def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
     '''
     Returns the positions of centroids of the aluminium foil in each frame. 
@@ -44,6 +49,26 @@ def two_blob_kmeans(frame, previous_centroid=None, dist_thresh=30):
     c1 = (c[0][0], c[0][1])
     c2 = (c[1][0], c[1][1])
 
+    debug_img = np.zeros((frame.shape[0], frame.shape[1], 3), dtype=np.uint8)
+
+    for x, y in coords:
+        debug_img[y, x] = (255, 255, 255)
+    
+    cv2.circle(debug_img,
+        (int(c1[0]), int(c1[1])),
+        dist_thresh,
+        (0, 255, 0), 2)
+
+    cv2.circle(debug_img,
+            (int(c2[0]), int(c2[1])),
+            dist_thresh,
+            (0, 0, 255), 2)
+    
+    cv2.circle(debug_img, (int(c1[0]), int(c1[1])), 1, (0, 0, 255))
+    cv2.circle(debug_img, (int(c2[0]), int(c2[1])), 1, (0, 0, 255))
+
+    show_resized_window("Filtered White Pixels", debug_img, 200, 700)
+    cv2.waitKey(1)
     return c1, c2
 
 def length_analysis(video_path, crop_points=None, end_coord=(0, 0), threshold=125, dist_thresh = 20, start_frame=0, end_frame=None):
@@ -85,12 +110,12 @@ def length_analysis(video_path, crop_points=None, end_coord=(0, 0), threshold=12
         if crop_points is not None:
             cropped_frame = frame[y:y+h, x:x+w]
 
-        cv2.imshow('Original Frame', cropped_frame)
+        show_resized_window("Original Frame", cropped_frame, 200, 700)        
         gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY) #Convert to grayscale
         gray = cv2.GaussianBlur(gray, (3, 3), 0) #Blur out imperfections
         _, thresh = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
-                
-        cv2.imshow("Post image processing", thresh)
+
+        show_resized_window("Post image processing", thresh, 200, 700)
         if cv2.waitKey(30) & 0xFF == ord('q'):
             cv2.waitKey(1)
             cv2.waitKey(1)
@@ -107,27 +132,11 @@ def length_analysis(video_path, crop_points=None, end_coord=(0, 0), threshold=12
             end_to_end_length = end_length_2
             mid_length_2 = end_length_1     
         
-        thresh_vis = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-        cv2.circle(thresh_vis, (int(c1[0]), int(c1[1])), 1, (0, 0, 255))
-        cv2.circle(thresh_vis, (int(c2[0]), int(c2[1])), 1, (0, 0, 255))
         #Record time
         time_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
         data.append((time_sec, end_to_end_length, mid_length_1, mid_length_2))
         previous_centroids = c1, c2
-        cv2.circle(thresh_vis,
-                (int(c1[0]), int(c1[1])),
-                dist_thresh,
-                (0, 255, 0), 2)
-
-        cv2.circle(thresh_vis,
-                (int(c2[0]), int(c2[1])),
-                dist_thresh,
-                (0, 0, 255), 2)
-        
-        cv2.imshow('With centroid, radius', thresh_vis)
-
-
 
     cap.release()
     cv2.destroyAllWindows()
