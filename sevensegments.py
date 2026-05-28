@@ -97,7 +97,7 @@ def define_segments(video_path, crop_points):
     current_points = []
     current_segment = []
 
-    image = cropregion.halfway_frame(video_path)
+    image = cropregion.nth_frame(video_path, 0.5)
     cropped_image = cropregion.four_point_crop(image, crop_points)
     clone = cropped_image.copy()
 

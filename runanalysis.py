@@ -8,8 +8,8 @@ import length
 import matplotlib.pyplot as plt
 
 #%% Define file names
-nm_video_path = "Newtonmeter2.mp4"
-muscle_video_path = "Muscle.mp4"
+nm_video_path = "NewtonmeterTest2.mp4"
+muscle_video_path = "MuscleTest2.mp4"
 
 #%% Find crop region for newtonmeter
 nm_corners = cropregion.select_four_corners(nm_video_path)
