@@ -6,9 +6,10 @@ clone2 = None
 segments = []
 current_points = []
 
-def resize_window(frame):
-
-    return resized_frame
+def show_resized_window(window_name, image, width=200, height=700):
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window_name, width, height)
+    cv2.imshow(window_name, image)
 
 def nth_frame(video_path, portion_through_video = 0):
     '''

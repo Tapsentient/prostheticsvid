@@ -42,7 +42,7 @@ def segment_expander(segments):
             p1, p2 = segments[digit][line]
             yield p1, p2
 
-def segment_ocr(frame, segments):
+def segment_ocr(frame, segments, verbose = True):
     '''
     Given the coordinates of the segments in a frame, returns
     the numeric digits displayed by the segments.  
@@ -56,12 +56,16 @@ def segment_ocr(frame, segments):
         current_digit.append(int(on))
         if len(current_digit) == 7:
             current_digit_char = segment_map.get(tuple(current_digit), None)
-            if current_digit_char is None:
-                return np.nan
             digits.append(current_digit_char)
             current_digit = []
 
-    text = int("".join(digits))    
+    if verbose:
+        print(digits)
+    try:
+        text = int("".join(digits))  
+    except TypeError:
+        print("Failed to convert digits into integer.")
+        return np.nan
     return text
 
 segments = []
@@ -87,7 +91,7 @@ def click_event(event, x, y, flags, param):
             print(f"Digit {len(segments)} completed.")    
     
 
-def define_segments(video_path, crop_points):
+def define_segments(video_path, crop_points, frac_through_vid=0.5):
     '''
     Given a video of the newtonmeter and the region it is to be cropped to,
     displays the newtonmeter and allows you to draw lines where the segments are
@@ -97,13 +101,11 @@ def define_segments(video_path, crop_points):
     current_points = []
     current_segment = []
 
-    image = cropregion.nth_frame(video_path, 0.5)
+    image = cropregion.nth_frame(video_path, frac_through_vid)
     cropped_image = cropregion.four_point_crop(image, crop_points)
     clone = cropped_image.copy()
 
-    cv2.namedWindow("Define Segments", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Define Segments", 400, 200)
-    cv2.imshow("Define Segments", clone)
+    cropregion.show_resized_window("Define Segments", clone, 300, 100)
     cv2.setMouseCallback("Define Segments", click_event)
     print("Click 2 points per segment. Select each digit in order," \
     "starting from the top and going clockwise. End with the middle. Press ESC when done.")
@@ -124,7 +126,7 @@ def define_segments(video_path, crop_points):
     print("Segment coordinates:", segments)
     return segments
 
-def is_segment_on(frame, p1, p2, threshold=0.5):
+def is_segment_on(frame, p1, p2, threshold=0.7):
     '''
     Checks if the segment between points p1 and p2 in the given frame is on. 
     Returns a boolean - True if on, False if off. 
@@ -196,9 +198,8 @@ def newtonmeter_analysis(video_path, crop_points=None, start_frame=0, end_frame=
         for segment in segment_expander(segments):
             cv2.line(thresh, *segment, (0, 255, 0), 2)
 
-        cv2.imshow('Cropped and Black and White Frame', thresh)
+        cropregion.show_resized_window('Cropped BnW Frame', thresh, 300, 100)
         #Record time
-        input()
         time_sec = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
 
         data.append((time_sec, text))
